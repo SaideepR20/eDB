@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from edb.api.dependencies import (
     AppState,
@@ -19,7 +19,10 @@ router = APIRouter()
 
 class KVSetRequest(BaseModel):
     value: Any
-    ttl: int | None = None
+    # Same bounds as the query DSL's KVQuery.ttl: KeyValueStore.set() takes
+    # float seconds, and a zero, negative or non-finite TTL would store a write
+    # that is already expired (or never expires) while reporting success.
+    ttl: float | None = Field(default=None, gt=0, allow_inf_nan=False)
 
 
 @router.get("/keys")

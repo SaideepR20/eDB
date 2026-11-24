@@ -144,6 +144,27 @@ def test_kv_get_returns_a_stored_null(app_client, admin_token):
     assert app_client.get("/kv/missing", headers=h).status_code == 404
 
 
+def test_kv_set_accepts_fractional_ttl(app_client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    resp = app_client.put("/kv/short", json={"value": 1, "ttl": 1.5}, headers=h)
+    assert resp.status_code == 200
+    assert resp.json()["expires_at"] is not None
+
+    resp = app_client.get("/kv/short", headers=h)
+    assert resp.status_code == 200
+    assert resp.json()["value"] == 1
+
+
+def test_kv_set_rejects_non_positive_ttl(app_client, admin_token):
+    h = {"Authorization": f"Bearer {admin_token}"}
+    for ttl in (0, -1, -0.5):
+        resp = app_client.put("/kv/gone", json={"value": 1, "ttl": ttl}, headers=h)
+        assert resp.status_code == 422, ttl
+
+    # Nothing was written by the rejected requests.
+    assert app_client.get("/kv/gone", headers=h).status_code == 404
+
+
 def test_admin_stats(app_client, admin_token):
     h = {"Authorization": f"Bearer {admin_token}"}
     resp = app_client.get("/admin/stats", headers=h)

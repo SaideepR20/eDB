@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- `PUT /kv/{key}` validates `ttl` the same way the store does: a positive, finite number of seconds,
+  fractions included. It was typed as an integer, so `1.5` was rejected with 422, while `0` and
+  negative values were accepted and stored an already-expired entry: the request reported success
+  and the next `GET` returned 404. Zero and negative TTLs are now rejected with 422.
 - `edb serve` reads `EDB_DB_PATH`, `EDB_API_HOST` and `EDB_API_PORT` from the environment and `.env`
   when `--db`, `--host` or `--port` is not given, and a flag that is given wins. Before, `--host` and
   `--port` always fell back to `127.0.0.1:8000`, a `.env` database path was replaced by `edb_data.db`,
